@@ -122,3 +122,4 @@ htmlcov/
 *.sqlite3
 .sixth/
 .sixth
+venv\Lib\site-packages\cryptography-46.0.7.dist-info\WHEEL

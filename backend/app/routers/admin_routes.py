@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from ..auth_dependencies import get_bearer_token
 from ..database import get_database
 from ..schemas.admin_schemas import (
+    AdminComplaintAssignRequest,
     AdminCreate,
     AdminDeleteUserRequest,
     AdminDepartmentCreate,
@@ -96,8 +97,12 @@ def edit_department(
 def complaints(
     access_token: str = Depends(get_bearer_token),
     db=Depends(get_database),
+    limit: int = 25,
+    status: str | None = None,
+    priority: str | None = None,
+    department: str | None = None,
 ):
-    return get_all_complaints_for_admin(db, access_token)
+    return get_all_complaints_for_admin(db, access_token, limit, status, priority, department)
 
 
 @router.get("/departments/{department_id}/complaints")
@@ -126,3 +131,33 @@ def delete_user(
     db=Depends(get_database),
 ):
     return remove_user_by_admin(db, user_id, access_token, data.reason)
+
+
+@router.put("/complaints/{complaint_id}/assign")
+def reassign(
+    complaint_id: str,
+    data: AdminComplaintAssignRequest,
+    access_token: str = Depends(get_bearer_token),
+    db=Depends(get_database),
+):
+    from ..services.admin_services import reassign_complaint
+    return reassign_complaint(db, complaint_id, data.department, access_token)
+
+
+@router.delete("/complaints/{complaint_id}")
+def delete_complaint_admin(
+    complaint_id: str,
+    access_token: str = Depends(get_bearer_token),
+    db=Depends(get_database),
+):
+    from ..services.admin_services import remove_complaint_by_admin
+    return remove_complaint_by_admin(db, complaint_id, access_token)
+
+
+@router.get("/analytics")
+def analytics(
+    access_token: str = Depends(get_bearer_token),
+    db=Depends(get_database),
+):
+    from ..services.admin_services import get_analytics
+    return get_analytics(db, access_token)

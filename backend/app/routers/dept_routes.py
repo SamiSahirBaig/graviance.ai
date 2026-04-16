@@ -32,8 +32,10 @@ def login(data: DepartmentLogin, db=Depends(get_database)):
 def list_department_complaints(
     access_token: str = Depends(get_bearer_token),
     db=Depends(get_database),
+    status: str | None = None,
+    priority: str | None = None,
 ):
-    return get_department_complaints(db, access_token)
+    return get_department_complaints(db, access_token, status, priority)
 
 
 @router.put("/update/{complaint_id}")

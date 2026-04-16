@@ -106,12 +106,15 @@ def login_department_officer(db, data):
     }
 
 
-def get_department_complaints(db, access_token):
+def get_department_complaints(db, access_token, status: str | None = None, priority: str | None = None):
     officer = authenticate_access_token(db, access_token, role="department")
-    complaints = db["complaints"].find(
-        {"user_selected_department": officer["department"]}
-    )
+    query = {"user_selected_department": officer["department"]}
+    if status:
+        query["status"] = status
+    if priority:
+        query["priority"] = priority
 
+    complaints = db["complaints"].find(query).sort("created_at", -1)
     return [_serialize_department_complaint(complaint) for complaint in complaints]
 
 

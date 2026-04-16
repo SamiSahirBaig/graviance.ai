@@ -50,6 +50,12 @@ class AdminDeleteUserRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class AdminComplaintAssignRequest(BaseModel):
+    department: str = Field(min_length=2, max_length=100)
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class AdminOfficerView(BaseModel):
     full_name: str
     username: str

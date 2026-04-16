@@ -98,3 +98,39 @@ def update_user_complaint(db, complaint_id: str, data, access_token: str):
     updated_complaint = db["complaints"].find_one({"_id": complaint["_id"]})
 
     return serialize_complaint(updated_complaint)
+
+
+def track_complaint(db, complaint_id: str, access_token: str):
+    # Track can be called by user, department, or admin
+    from ..security import decode_access_token
+    payload = decode_access_token(access_token)
+    role = payload.get("role")
+    
+    complaint = _get_complaint_or_404(db, complaint_id)
+    
+    # User can only track their own
+    if role == "user" and complaint.get("user_id") != payload.get("sub"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can track only your own complaints.",
+        )
+    
+    # Department can only track theirs
+    if role == "department":
+        from .dept_services import authenticate_access_token as auth_dept
+        officer = auth_dept(db, access_token, role="department")
+        if complaint["user_selected_department"] != officer["department"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can track only complaints assigned to your department.",
+            )
+
+    return {
+        "complaint_id": str(complaint["_id"]),
+        "status": complaint["status"],
+        "history": complaint.get("history", []),
+        "created_at": complaint["created_at"],
+        "resolved_at": complaint.get("resolved_at"),
+        "action_taken": complaint.get("action_taken"),
+        "ai_analysis": complaint.get("ml_output", {})
+    }

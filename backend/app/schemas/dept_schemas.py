@@ -27,8 +27,8 @@ class DepartmentLogin(BaseModel):
 # DEPARTMENT ACTION INPUT
 # -------------------------
 class DepartmentActionUpdate(BaseModel):
-    status: str = Field(..., pattern="^(resolved|in_progress|rejected)$")
-    action_taken: str = Field(..., min_length=5, max_length=500)
+    status: str = Field(..., pattern="^(open|in_progress|resolved|closed|rejected|pending)$")
+    action_taken: Optional[str] = Field(default=None, max_length=500)
     resolved_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True, extra="forbid")

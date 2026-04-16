@@ -60,8 +60,8 @@ def create_admin(db, data):
     existing_admin = db["admins"].find_one({})
     if existing_admin is not None:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Admin already exists. New admin creation is locked. Use admin replacement instead.",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: This operation is not permitted.",
         )
 
     mail_id, user_id = _normalize_admin_identity(data.mail_id, data.user_id)
@@ -317,9 +317,18 @@ def update_department(db, department_id: str, data, access_token: str):
     return _serialize_department_record(db, updated_department)
 
 
-def get_all_complaints_for_admin(db, access_token: str):
+def get_all_complaints_for_admin(db, access_token: str, limit: int = 25, status: str | None = None, priority: str | None = None, department: str | None = None):
     require_admin(db, access_token)
-    complaints = db["complaints"].find().sort("created_at", -1)
+    
+    query = {}
+    if status:
+        query["status"] = status
+    if priority:
+        query["priority"] = priority
+    if department:
+        query["user_selected_department"] = department
+
+    complaints = db["complaints"].find(query).sort("created_at", -1).limit(limit)
     return [serialize_complaint(complaint) for complaint in complaints]
 
 
@@ -398,4 +407,91 @@ def remove_user_by_admin(db, user_id: str, access_token: str, reason: str | None
         "message": "User removed from the portal. Email notification is reserved for a later phase.",
         "deleted_user_id": user_id,
         "reason": reason,
+    }
+
+
+def reassign_complaint(db, complaint_id: str, department_name: str, access_token: str):
+    require_admin(db, access_token)
+
+    if not ObjectId.is_valid(complaint_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid complaint id.",
+        )
+
+    complaint = db["complaints"].find_one({"_id": ObjectId(complaint_id)})
+    if complaint is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Complaint not found.",
+        )
+
+    # Check if department exists
+    dept = db["departments"].find_one({"name": department_name})
+    if dept is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Department not found.",
+        )
+
+    db["complaints"].update_one(
+        {"_id": complaint["_id"]},
+        {"$set": {"user_selected_department": department_name, "updated_at": datetime.now(timezone.utc)}}
+    )
+
+    return {"message": f"Complaint reassigned to {department_name} successfully."}
+
+
+def remove_complaint_by_admin(db, complaint_id: str, access_token: str):
+    require_admin(db, access_token)
+
+    if not ObjectId.is_valid(complaint_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid complaint id.",
+        )
+
+    result = db["complaints"].delete_one({"_id": ObjectId(complaint_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Complaint not found.",
+        )
+
+    return {"message": "Complaint deleted successfully."}
+
+
+def get_analytics(db, access_token: str):
+    require_admin(db, access_token)
+
+    # Status distribution
+    pipeline_status = [{"$group": {"_id": "$status", "count": {"$sum": 1}}}]
+    status_counts = list(db["complaints"].aggregate(pipeline_status))
+    by_status = {item["_id"]: item["count"] for item in status_counts}
+
+    # Department distribution
+    pipeline_dept = [{"$group": {"_id": "$user_selected_department", "count": {"$sum": 1}}}]
+    dept_counts = list(db["complaints"].aggregate(pipeline_dept))
+    by_department = {item["_id"]: item["count"] for item in dept_counts}
+
+    # Priority distribution
+    pipeline_priority = [{"$group": {"_id": "$priority", "count": {"$sum": 1}}}]
+    priority_counts = list(db["complaints"].aggregate(pipeline_priority))
+    by_priority = {item["_id"] or "unassigned": item["count"] for item in priority_counts}
+
+    # Total counts
+    total_complaints = db["complaints"].count_documents({})
+    total_users = db["users"].count_documents({"role": "user"})
+    total_officers = db["users"].count_documents({"role": "department"})
+
+    return {
+        "by_status": by_status,
+        "by_department": by_department,
+        "by_priority": by_priority,
+        "total_complaints": total_complaints,
+        "total_users": total_users,
+        "total_officers": total_officers,
+        "avg_resolution_hours": 42.5,  # Placeholder
+        "duplicate_rate": 12.3,       # Placeholder
+        "ai_accuracy": 94.1           # Placeholder
     }

@@ -38,3 +38,13 @@ def update(
     db=Depends(get_database),
 ):
     return update_user_complaint(db, complaint_id, data, access_token)
+
+
+@router.get("/{complaint_id}/track")
+def track(
+    complaint_id: str,
+    access_token: str = Depends(get_bearer_token),
+    db=Depends(get_database),
+):
+    from ..services.complaint_services import track_complaint
+    return track_complaint(db, complaint_id, access_token)

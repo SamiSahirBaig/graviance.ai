@@ -1,13 +1,7 @@
 from pathlib import Path
 import sys
-
 from fastapi import FastAPI
-
-if __package__ is None or __package__ == "":
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from app.routers import admin_routes, complaint_routes, dept_routes, user_routes
-else:
-    from .routers import admin_routes, complaint_routes, dept_routes, user_routes
+from .routers import admin_routes, complaint_routes, dept_routes, user_routes, public_routes
 
 app = FastAPI(title="ResolveAI")
 
@@ -23,6 +17,10 @@ def home():
 # -------------------------
 # ROUTERS
 # -------------------------
+app.include_router(
+    public_routes.router
+)
+
 app.include_router(
     complaint_routes.router
 )

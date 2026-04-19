@@ -1,21 +1,22 @@
 import streamlit as st
 import requests
 import json
+import os
 from datetime import datetime
 from typing import Any
 
 # ── CONFIG ──────────────────────────────────────────────────────────────────
-try:
-    API_BASE = st.secrets.get("API_BASE", "http://localhost:8000")
-except Exception:
-    API_BASE = "http://localhost:8000"
-
 st.set_page_config(
     page_title="ResolveAI",
     page_icon="⚖️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+try:
+    API_BASE = st.secrets.get("API_BASE", "http://localhost:8000")
+except Exception:
+    API_BASE = "http://localhost:8000"
 
 # ── HELPERS ──────────────────────────────────────────────────────────────────
 def api(method, path, token=None, **kwargs):

@@ -98,8 +98,8 @@ with st.sidebar:
                      "✅ Update Status": "update_status"}
         else:  # admin
             pages = {"🏠 Dashboard": "admin_dash",
-                     "👥 Manage Users": "users",
-                     "🏢 Departments": "departments",
+                     "👥 Manage Faculty": "users",
+                     "🏢 Faculties": "departments",
                      "📊 All Complaints": "all_complaints",
                      "📈 Analytics": "analytics"}
         for label, pg in pages.items():
@@ -146,19 +146,19 @@ def page_home():
     st.markdown("---")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown("### 👤 Citizens")
+        st.markdown("### 👤 Students")
         st.write("Submit & track grievances, get real-time updates.")
-        if st.button("Login as Citizen", use_container_width=True):
+        if st.button("Login as Student", use_container_width=True):
             st.session_state.page = "login"; st.rerun()
     with col2:
-        st.markdown("### 🏢 Departments")
+        st.markdown("### 🏢 Faculties")
         st.write("Manage assigned complaints and update resolutions.")
-        if st.button("Login as Department", use_container_width=True):
+        if st.button("Login as Faculty", use_container_width=True):
             st.session_state.page = "login"; st.rerun()
     with col3:
-        st.markdown("### 🛡️ Admin")
+        st.markdown("### 🛡️ Coordinator")
         st.write("Full system oversight, analytics and user management.")
-        if st.button("Login as Admin", use_container_width=True):
+        if st.button("Login as Coordinator", use_container_width=True):
             st.session_state.page = "login"; st.rerun()
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -231,7 +231,13 @@ def page_login():
     st.title("🔑 Login to ResolveAI")
     col, _ = st.columns([1.2, 1])
     with col:
-        role = st.selectbox("Login as", ["citizen", "department", "admin"])
+        role_mapping = {
+            "student": "citizen",
+            "faculty": "department",
+            "coordinator": "admin"
+        }
+        raw_role = st.selectbox("Login as", ["student", "faculty", "coordinator"])
+        role = role_mapping.get(raw_role)
         email = st.text_input("Email / Username")
         password = st.text_input("Password", type="password")
 
@@ -286,7 +292,7 @@ def page_login():
 # PAGE: REGISTER
 # ══════════════════════════════════════════════════════════════════════════════
 def page_register():
-    st.title("📝 Register as Citizen")
+    st.title("📝 Register as Student")
     col, _ = st.columns([1.2, 1])
     with col:
         with st.form("register_form"):
@@ -362,7 +368,7 @@ def page_register():
 # PAGE: CITIZEN DASHBOARD
 # ══════════════════════════════════════════════════════════════════════════════
 def page_citizen_dash():
-    st.title(f"🏠 Welcome, {st.session_state.get('user','Citizen')}!")
+    st.title(f"🏠 Welcome, {st.session_state.get('user','Student')}!")
     token = get_token()
 
     r = api("get", "/complaints/list", token=token)
@@ -412,7 +418,7 @@ def page_submit():
 
     with st.form("complaint_form"):
         title    = st.text_input("Complaint Title *")
-        category = st.selectbox("Category / Department", depts)
+        category = st.selectbox("Category / Faculty", depts)
         desc     = st.text_area("Description *", height=150)
         location = st.text_input("Location / Address")
         priority = st.selectbox("Self-assessed Priority", ["Low", "Medium", "High"])
@@ -464,7 +470,7 @@ def page_my_complaints():
             with st.expander(f"{status_badge(c.get('status','open'))}  {c.get('text','Untitled')[:50]}...  —  {c.get('created_at','')[:10]}"):
                 col1, col2 = st.columns(2)
                 col1.write(f"**ID:** `{c.get('id','')}`")
-                col2.write(f"**Dept:** {c.get('department','N/A')}")
+                col2.write(f"**Faculty:** {c.get('department','N/A')}")
                 st.write(f"**Complaint:** {c.get('text','')}")
                 if c.get("action_taken"):
                     st.success(f"✅ Action taken: {c['action_taken']}")
@@ -488,7 +494,7 @@ def page_notifications():
 # PAGE: DEPARTMENT DASHBOARD
 # ══════════════════════════════════════════════════════════════════════════════
 def page_dept_dash():
-    st.title(f"🏢 Department Dashboard")
+    st.title(f"🏢 Faculty Dashboard")
     token = get_token()
 
     r = api("get", "/department/complaints", token=token)
@@ -540,7 +546,7 @@ def page_dept_complaints():
         for c in complaints:
             with st.expander(f"{priority_badge(c.get('priority','low'))}  {c.get('title','Untitled')}  |  {status_badge(c.get('status','open'))}"):
                 col1, col2 = st.columns(2)
-                col1.write(f"**Citizen:** {c.get('citizen_name','N/A')}")
+                col1.write(f"**Student:** {c.get('citizen_name','N/A')}")
                 col2.write(f"**Created:** {str(c.get('created_at',''))[:10]}")
                 st.write(f"**Description:** {c.get('description','')}")
                 if c.get("ai_priority"):
@@ -589,7 +595,7 @@ def page_update_status():
 # PAGE: ADMIN DASHBOARD
 # ══════════════════════════════════════════════════════════════════════════════
 def page_admin_dash():
-    st.title("🛡️ Admin Dashboard")
+    st.title("🛡️ Coordinator Dashboard")
     token = get_token()
 
     st.info("Admin dashboard statistics are currently unavailable.")
@@ -616,7 +622,7 @@ def page_all_complaints():
     col1, col2, col3, col4 = st.columns(4)
     sf = col1.selectbox("Status", ["All","open","in_progress","resolved","closed"])
     pf = col2.selectbox("Priority", ["All","high","medium","low"])
-    df = col3.text_input("Department filter")
+    df = col3.text_input("Faculty filter")
     lm = col4.selectbox("Limit", [25, 50, 100])
 
     params: dict[str, Any] = {"limit": lm}
@@ -632,11 +638,11 @@ def page_all_complaints():
             with st.expander(f"{status_badge(c.get('status','open'))}  {c.get('title','Untitled')}  |  {priority_badge(c.get('priority','low'))}  |  {c.get('department','N/A')}"):
                 col1, col2, col3 = st.columns(3)
                 col1.write(f"**ID:** `{c.get('id','')}`")
-                col2.write(f"**Citizen:** {c.get('citizen_name','N/A')}")
+                col2.write(f"**Student:** {c.get('citizen_name','N/A')}")
                 col3.write(f"**Date:** {str(c.get('created_at',''))[:10]}")
                 st.write(f"**Description:** {c.get('description','')}")
                 # Admin: reassign dept
-                new_dept = st.text_input("Reassign to department", key=f"dept_{c.get('id')}")
+                new_dept = st.text_input("Reassign to faculty", key=f"dept_{c.get('id')}")
                 if st.button("🔄 Reassign", key=f"reassign_{c.get('id')}"):
                     rr = api("put", f"/admin/complaints/{c.get('id')}/assign", token=token,
                              json={"department": new_dept})
@@ -675,7 +681,7 @@ def page_users():
 # PAGE: DEPARTMENTS (admin)
 # ══════════════════════════════════════════════════════════════════════════════
 def page_departments():
-    st.title("🏢 Departments")
+    st.title("🏢 Faculties")
     token = get_token()
 
     # List departments

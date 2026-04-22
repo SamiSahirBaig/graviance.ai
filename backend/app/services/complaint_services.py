@@ -16,6 +16,7 @@ def serialize_complaint(complaint):
         "action_taken": complaint.get("action_taken"),
         "created_at": complaint["created_at"],
         "resolved_at": complaint.get("resolved_at"),
+        "ai_priority": complaint.get("ai_priority", "Medium"),
         "user": {
             "full_name": user_snapshot.get("full_name", "Unknown"),
             "age": user_snapshot.get("age", 0),
@@ -45,10 +46,24 @@ def _get_complaint_or_404(db, complaint_id: str):
 
 def create_complaint(db, data, access_token: str):
     user = authenticate_access_token(db, access_token, role="user")
+    
+    # AI Assignment based on complaint text and available faculties
+    from .ai_service import assign_best_faculty
+    faculties = list(db["departments"].find({}, {"name": 1}))
+    assigned_faculty = assign_best_faculty(data.text, faculties)
+    
+    # Overwrite the user selection with the AI assigned faculty
+    data_dict = data.model_dump()
+    data_dict["user_selected_department"] = assigned_faculty
+    
     complaint = complaint_model(
-        data.model_dump(),
+        data_dict,
         user,
     )
+    
+    # Mock AI metadata for priority
+    complaint["ml_output"]["urgency_score"] = 0.85
+    complaint["ai_priority"] = "High"
 
     result = db["complaints"].insert_one(complaint)
     saved_complaint = db["complaints"].find_one({"_id": result.inserted_id})

@@ -32,9 +32,9 @@
 ### 👥 User Roles & Dashboards
 The system features a **unified Streamlit application** with high-contrast, professional UI components and role-based access:
 
-- 👤 **Citizen Dashboard**: Submit complaints with AI-driven priority assessment, track status in real-time, and receive resolution notifications.
-- 🏢 **Department Dashboard**: Manage assigned queues, update resolution notes, and track performance metrics.
-- 🛡️ **Admin Dashboard**: Full system oversight, department management, user auditing, and advanced analytics.
+- 👤 **Student Dashboard**: Submit complaints with AI-driven priority assessment, track status in real-time, and receive resolution notifications.
+- 🏢 **Faculty Dashboard**: Manage assigned queues, update resolution notes, and track performance metrics.
+- 🛡️ **Coordinator Dashboard**: Full system oversight, Faculty management, user auditing, and advanced analytics.
 
 ---
 
@@ -47,9 +47,9 @@ The system features a **unified Streamlit application** with high-contrast, prof
 - **Improved Connection Handling**: Global API helper with automated error reporting for backend connectivity.
 
 ### ⚡ Backend Improvements
-- **Expanded API Ecosystem**: Added public `/departments` listing, dedicated `/admin/analytics` endpoints, and robust `/complaints/{id}/track` history.
-- **Surgical Updates**: Department officers can now provide resolution notes via atomic `PUT /department/update/{id}` calls.
-- **Admin Controls**: New capabilities for complaint reassignment and administrative deletion.
+- **Expanded API Ecosystem**: Added public `/Facultys` listing, dedicated `/Coordinator/analytics` endpoints, and robust `/complaints/{id}/track` history.
+- **Surgical Updates**: Faculty officers can now provide resolution notes via atomic `PUT /Faculty/update/{id}` calls.
+- **Coordinator Controls**: New capabilities for complaint reassignment and Coordinatoristrative deletion.
 - **Schema Hardening**: Broadened status validation and improved Pydantic models for cross-layer data consistency.
 
 ---
@@ -60,7 +60,7 @@ The system features a **unified Streamlit application** with high-contrast, prof
 ResolveAI/
 ├── backend/               # FastAPI application
 │   ├── app/
-│   │   ├── routers/       # API endpoints (auth, complaints, admin, dept, public)
+│   │   ├── routers/       # API endpoints (auth, complaints, Coordinator, dept, public)
 │   │   ├── services/      # Core business logic & database interactions
 │   │   ├── schemas/       # Pydantic validation models
 │   │   ├── models/        # Database document structures
@@ -113,24 +113,24 @@ streamlit run streamlit_app.py
 ## 📖 API Reference (Key Endpoints)
 
 ### 🏠 Public
-- `GET /departments` — List available departments for registration/submission.
+- `GET /Facultys` — List available Facultys for registration/submission.
 
 ### 🔑 Authentication
-- `POST /users/login` — Citizen login.
-- `POST /department/login` — Officer login.
-- `POST /admin/login` — Administrative login.
-- `POST /users/create` — New citizen registration.
+- `POST /users/login` — Student login.
+- `POST /Faculty/login` — Officer login.
+- `POST /Coordinator/login` — Coordinatoristrative login.
+- `POST /users/create` — New Student registration.
 
 ### 📋 Complaints
 - `POST /complaints/create` — Submit new grievance (Triggers AI analysis).
 - `GET /complaints/list` — Personal complaint history.
 - `GET /complaints/{id}/track` — Detailed status and history.
-- `PUT /department/update/{id}` — Department-level status & resolution update.
+- `PUT /Faculty/update/{id}` — Faculty-level status & resolution update.
 
-### 🛡️ Admin
-- `GET /admin/analytics` — Global metrics (Status distribution, resolution times).
-- `PUT /admin/complaints/{id}/assign` — Reassign complaint to another department.
-- `DELETE /admin/complaints/{id}` — Administrative removal of records.
+### 🛡️ Coordinator
+- `GET /Coordinator/analytics` — Global metrics (Status distribution, resolution times).
+- `PUT /Coordinator/complaints/{id}/assign` — Reassign complaint to another Faculty.
+- `DELETE /Coordinator/complaints/{id}` — Coordinatoristrative removal of records.
 
 ---
 
